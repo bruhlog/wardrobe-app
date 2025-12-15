@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'upload_cloth_screen.dart';
 import '../widgets/wardrobe_tab.dart';
 
 class WardrobeScreen extends StatelessWidget {
@@ -18,6 +19,15 @@ class WardrobeScreen extends StatelessWidget {
               Tab(text: 'Shoes'),
             ],
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.add),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const UploadClothScreen()),
+            );
+          },
         ),
         body: const TabBarView(
           children: [
