@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -10,10 +14,196 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Wardrobe App',
-      home: const HomeScreen(),
+      home: LoginScreen(),
+    );
+  }
+}
+
+/* ==================== DAY 10 ==================== */
+/* -------------------- LOGIN SCREEN -------------------- */
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  bool isLoading = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> loginUser() async {
+    setState(() => isLoading = true);
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Login failed')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Login')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 30),
+
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : loginUser,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Login'),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignupScreen()),
+                );
+              },
+              child: const Text("Don't have an account? Sign up"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* ==================== DAY 11 ==================== */
+/* -------------------- SIGNUP SCREEN -------------------- */
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  bool isLoading = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> signupUser() async {
+    setState(() => isLoading = true);
+
+    try {
+      await _auth.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Signup failed')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sign Up')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 30),
+
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : signupUser,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Create Account'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -34,11 +224,10 @@ class HomeScreen extends StatelessWidget {
         child: ElevatedButton(
           child: const Text('Go to Profile'),
           onPressed: () {
-            /* NAVIGATOR.PUSH */
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ProfileScreen(),
+                builder: (_) => const ProfileScreen(),
               ),
             );
           },
@@ -58,70 +247,35 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  /* CONTROLLERS */
   final TextEditingController heightController = TextEditingController();
   final TextEditingController weightController = TextEditingController();
 
   @override
-  void dispose() {
-    heightController.dispose();
-    weightController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Profile'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            /* NAVIGATOR.POP */
-            Navigator.pop(context);
-          },
-        ),
-      ),
-
+      appBar: AppBar(title: const Text('Your Profile')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
-            /* HEIGHT INPUT */
             TextField(
               controller: heightController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Height (cm)',
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            /* WEIGHT INPUT */
             TextField(
               controller: weightController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Weight (kg)',
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 30),
-
-            /* SAVE BUTTON */
             ElevatedButton(
-              onPressed: () {
-                String height = heightController.text;
-                String weight = weightController.text;
-
-                /* TEMP: PRINT VALUES */
-                debugPrint('Height: $height cm');
-                debugPrint('Weight: $weight kg');
-              },
+              onPressed: () {},
               child: const Text('Save Profile'),
             ),
           ],
